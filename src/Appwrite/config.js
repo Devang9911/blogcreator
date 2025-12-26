@@ -10,9 +10,12 @@ export class Service {
         this.client
             .setEndpoint(conf.appwriteURL)
             .setProject(conf.appwriteProjectID);
+
         this.databases = new TablesDB(this.client);
         this.bucket = new Storage(this.client);
     }
+
+    // ------------------ POSTS -----------------------
 
     async createPost({ title, slug, content, featuredImage, status, userId }) {
         try {
@@ -27,13 +30,14 @@ export class Service {
                     status,
                     userId
                 }
-            })
+            });
         } catch (error) {
-            console.log("Appwrite service :: createPost :: error", error)
+            console.error("createPost error:", error);
+            throw error;
         }
     }
 
-    async updatePost(slug, { title, content, featuredImage, status, userId }) {
+    async updatePost(slug, { title, content, featuredImage, status }) {
         try {
             return await this.databases.updateRow({
                 databaseId: conf.appwriteDatabaseID,
@@ -45,9 +49,10 @@ export class Service {
                     featuredImage,
                     status,
                 }
-            })
+            });
         } catch (error) {
-            console.log("Appwrite service :: updatePost :: error", error)
+            console.error("updatePost error:", error);
+            throw error;
         }
     }
 
@@ -57,10 +62,10 @@ export class Service {
                 databaseId: conf.appwriteDatabaseID,
                 tableId: conf.appwriteCollectionID,
                 rowId: slug
-            })
+            });
             return true;
         } catch (error) {
-            console.log("Appwrite service :: deletePost :: error", error)
+            console.error("deletePost error:", error);
             return false;
         }
     }
@@ -71,26 +76,27 @@ export class Service {
                 databaseId: conf.appwriteDatabaseID,
                 tableId: conf.appwriteCollectionID,
                 rowId: slug
-            })
+            });
         } catch (error) {
-            console.log("Appwrite service :: getPost :: error", error)
+            console.error("getPost error:", error);
+            return null;
         }
     }
 
     async getPosts(queries = [Query.equal("status", "active")]) {
         try {
-            await this.databases.listRows({
+            return await this.databases.listRows({
                 databaseId: conf.appwriteDatabaseID,
                 tableId: conf.appwriteCollectionID,
-                queries,
-            })
+                queries
+            });
         } catch (error) {
-            console.log("Appwrite service :: getallPost :: error", error)
-            return false;
+            console.error("getPosts error:", error);
+            return null;
         }
     }
 
-    // file upload services
+    // ------------------ FILES -----------------------
 
     async uploadFile(file) {
         try {
@@ -98,9 +104,9 @@ export class Service {
                 bucketId: conf.appwriteBucketID,
                 fileId: ID.unique(),
                 file
-            })
+            });
         } catch (error) {
-            console.log("Appwrite service :: uploadFile :: error", error)
+            console.error("uploadFile error:", error);
             return false;
         }
     }
@@ -109,11 +115,11 @@ export class Service {
         try {
             await this.bucket.deleteFile({
                 bucketId: conf.appwriteBucketID,
-                fileId: fileId,
-            })
+                fileId: fileId
+            });
             return true;
         } catch (error) {
-            console.log("Appwrite service :: deleteFile :: error", error)
+            console.error("deleteFile error:", error);
             return false;
         }
     }
@@ -121,11 +127,10 @@ export class Service {
     getFilePreview(fileId) {
         return this.bucket.getFilePreview({
             bucketId: conf.appwriteBucketID,
-            fileId: fileId,
-        })
+            fileId: fileId
+        });
     }
 }
 
-
-const service = new Service()
-export default service
+const service = new Service();
+export default service;
